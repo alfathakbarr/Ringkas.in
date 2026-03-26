@@ -13,7 +13,6 @@ return new class extends Migration
     {
         Schema::create('urls', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->text('original_url');
             $table->string('short_code', 10)->unique();
             $table->string('custom_alias')->nullable()->unique();
