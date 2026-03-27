@@ -51,19 +51,38 @@ class UrlController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'original_url' => ['required', 'url'],
-            'custom_alias' => ['nullable', 'alpha_dash', 'min:3', 'max:10', 'unique:urls,custom_alias'],
-            'deletion_key' => [
-                'required',
-                'string',
-                'min:8',
-                'max:64',
-                'regex:/^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).+$/',
+        $validated = $request->validate(
+            [
+                'original_url' => ['required', 'url:http,https'],
+                'custom_alias' => ['nullable', 'alpha_dash', 'min:3', 'max:10', 'unique:urls,custom_alias'],
+                'deletion_key' => [
+                    'required',
+                    'string',
+                    'min:8',
+                    'max:64',
+                    'regex:/^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).+$/',
+                ],
             ],
-        ], [
-            'deletion_key.regex' => 'Deletion key wajib memiliki minimal 1 huruf kapital, 1 angka, dan 1 karakter khusus.',
-        ]);
+            [
+                'original_url.required' => 'URL tujuan wajib diisi.',
+                'original_url.url' => 'URL tujuan harus valid dan menggunakan http/https.',
+
+                'custom_alias.alpha_dash' => 'Alias hanya boleh berisi huruf, angka, strip, atau underscore.',
+                'custom_alias.min' => 'Alias minimal :min karakter.',
+                'custom_alias.max' => 'Alias maksimal :max karakter.',
+                'custom_alias.unique' => 'Alias sudah digunakan, silakan pilih alias lain.',
+
+                'deletion_key.required' => 'Deletion key wajib diisi.',
+                'deletion_key.min' => 'Deletion key minimal :min karakter.',
+                'deletion_key.max' => 'Deletion key maksimal :max karakter.',
+                'deletion_key.regex' => 'Deletion key wajib memiliki minimal 1 huruf kapital, 1 angka, dan 1 karakter khusus.',
+            ],
+            [
+                'original_url' => 'URL tujuan',
+                'custom_alias' => 'alias',
+                'deletion_key' => 'deletion key',
+            ]
+        );
 
         $shortCode = !empty($validated['custom_alias'])
             ? strtolower($validated['custom_alias'])
@@ -109,9 +128,20 @@ class UrlController extends Controller
      */
     public function search(Request $request)
     {
-        $validated = $request->validate([
-            'key' => ['required', 'string', 'max:64'],
-        ]);
+        $validated = $request->validate(
+            [
+                'key' => ['required', 'string', 'min:8', 'max:64'],
+            ],
+            [
+                'key.required' => 'Deletion key wajib diisi.',
+                'key.string' => 'Deletion key harus berupa teks.',
+                'key.min' => 'Deletion key minimal :min karakter.',
+                'key.max' => 'Deletion key maksimal :max karakter.',
+            ],
+            [
+                'key' => 'deletion key',
+            ]
+        );
 
         $keyHash = $this->hashDeletionKey($validated['key']);
 
@@ -131,9 +161,20 @@ class UrlController extends Controller
      */
     public function destroy(Request $request, string $id)
     {
-        $validated = $request->validate([
-            'deletion_key' => ['required', 'string', 'max:64'],
-        ]);
+        $validated = $request->validate(
+            [
+                'deletion_key' => ['required', 'string', 'min:8', 'max:64'],
+            ],
+            [
+                'deletion_key.required' => 'Deletion key wajib diisi untuk menghapus link.',
+                'deletion_key.string' => 'Deletion key harus berupa teks.',
+                'deletion_key.min' => 'Deletion key minimal :min karakter.',
+                'deletion_key.max' => 'Deletion key maksimal :max karakter.',
+            ],
+            [
+                'deletion_key' => 'deletion key',
+            ]
+        );
 
         $url = Url::findOrFail($id);
         $inputHash = $this->hashDeletionKey($validated['deletion_key']);
