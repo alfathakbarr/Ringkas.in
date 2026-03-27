@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Url;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class UrlController extends Controller
 {
@@ -21,16 +22,31 @@ class UrlController extends Controller
      */
     public function index()
     {
+        // $totalLinks = Url::count();
+        // $totalClicks = Url::sum('click_count');
+        // $recentUrls = Url::latest()->take(5)->get();
+
+        // return view('home', compact('totalLinks', 'totalClicks', 'recentUrls'));
+        
+        // Sementara tampilkan semua URL untuk testing
         $urls = Url::all();
         return view('urls.index', compact('urls'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    public function shortUrlView()
     {
-        return view('urls.create');
+        return view('short-url');
+    }
+
+    public function qrView()
+    {
+        return view('generate-qr');
+    }
+
+    public function manageView()
+    {
+        $urls = Url::latest()->paginate(10);
+        return view('manage', compact('urls'));
     }
 
     /**
@@ -46,61 +62,68 @@ class UrlController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
-            'original_url' => 'required|url',
-            'custom_alias' => 'nullable|string|unique:urls,custom_alias',
+        $validated = $request->validate([
+            'original_url' => ['required', 'url'],
+            'custom_alias' => ['nullable', 'alpha_dash', 'min:3', 'max:50', 'unique:urls,custom_alias'],
         ]);
 
-        $url = new Url();
-        $url->original_url = $request->original_url;
-        $url->custom_alias = $request->custom_alias;
-        $url->short_code = $request->custom_alias ?? Url::generateShortCode();
-        $url->click_count = 0;
-        $url->save();
+        $shortCode = $validated['custom_alias'] ?? Url::generateShortCode();
 
-        return redirect()->route('urls.index')
-                       ->with('success', 'URL berhasil dibuat!');
+        $url = Url::create([
+            'original_url' => $validated['original_url'],
+            'custom_alias' => $validated['custom_alias'] ?? null,
+            'short_code' => $shortCode,
+            'deletion_key' => Str::upper(Str::random(12)),
+            'click_count' => 0,
+        ]);
+
+        return back()->with('success', 'URL pendek berhasil dibuat')->with('short_url', route('url.redirect', $url->short_code));
     }
 
-    /**
-     * Display the specified resource and increment click count.
-     */
-    public function show(string $id)
+    public function search(Request $request)
     {
-        $url = Url::where('short_code', $id)
-                  ->orWhere('custom_alias', $id)
-                  ->firstOrFail();
+        $request->validate(['key' => ['required', 'string', 'max:100']]);
+        $key = $request->key;
 
-        $url->incrementClick();
+        $urls = Url::query()
+            ->where('short_code', 'like', "%{$key}%")
+            ->orWhere('custom_alias', 'like', "%{$key}%")
+            ->orWhere('original_url', 'like', "%{$key}%")
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
 
-        return redirect($url->original_url);
+        return view('manage', compact('urls', 'key'));
     }
 
-    /**
-     * Show the form for editing the resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(string $id)
     {
-        $url = Url::findOrFail($id);
-        $url->delete();
+        Url::findOrFail($id)->delete();
+        return back()->with('success', 'Link berhasil dihapus');
+    }
 
-        return redirect()->route('urls.index')
-                       ->with('success', 'URL berhasil dihapus!');
+    public function access(string $code)
+    {
+        $url = Url::where('short_code', $code)
+            ->orWhere('custom_alias', $code)
+            ->firstOrFail();
+
+        $url->increment('click_count');
+
+        return response()->json([
+            'original_url' => $url->original_url,
+            'click_count' => $url->click_count,
+        ]);
+    }
+
+    public function redirect(string $code)
+    {
+        $url = Url::where('short_code', $code)
+            ->orWhere('custom_alias', $code)
+            ->firstOrFail();
+
+        $url->increment('click_count');
+
+        return redirect()->away($url->original_url);
     }
 }
