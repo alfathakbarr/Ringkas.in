@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Url;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
@@ -54,7 +53,9 @@ class UrlController extends Controller
         $validated = $request->validate(
             [
                 'original_url' => ['required', 'url:http,https'],
+                'use_custom_alias' => ['nullable', 'boolean'],
                 'custom_alias' => ['nullable', 'alpha_dash', 'min:3', 'max:10', 'unique:urls,custom_alias'],
+                'generate_qr' => ['nullable', 'boolean'],
                 'deletion_key' => [
                     'required',
                     'string',
@@ -80,9 +81,17 @@ class UrlController extends Controller
             [
                 'original_url' => 'URL tujuan',
                 'custom_alias' => 'alias',
+                'generate_qr' => 'generate qr',
                 'deletion_key' => 'deletion key',
             ]
         );
+
+        $useCustomAlias = $request->boolean('use_custom_alias');
+        $generateQr = $request->boolean('generate_qr');
+
+        if (!$useCustomAlias) {
+            $validated['custom_alias'] = null;
+        }
 
         $shortCode = !empty($validated['custom_alias'])
             ? strtolower($validated['custom_alias'])
@@ -110,17 +119,26 @@ class UrlController extends Controller
         ]);
 
         $shortUrl = route('urls.show', $url->custom_alias ?? $url->short_code);
-        $qrBinary = QrCode::format('png')->size(300)->margin(1)->generate($shortUrl);
-        $qrPath = "qr/{$url->id}.png";
-        Storage::disk('public')->put($qrPath, $qrBinary);
+        $qrPath = null;
+
+        if ($generateQr) {
+            $qrBinary = QrCode::format('png')->size(300)->margin(1)->generate($shortUrl);
+            $qrPath = "qr/{$url->id}.png";
+            Storage::disk('public')->put($qrPath, $qrBinary);
+        }
 
         $url->update(['qr_path' => $qrPath]);
 
-        return back()
+        $redirect = back()
             ->with('success', 'URL pendek berhasil dibuat')
             ->with('short_url', $shortUrl)
-            ->with('deletion_key', $validated['deletion_key'])
-            ->with('qr_url', Storage::url($qrPath));
+            ->with('deletion_key', $validated['deletion_key']);
+
+        if ($qrPath) {
+            $redirect->with('qr_url', Storage::url($qrPath));
+        }
+
+        return $redirect;
     }
 
     /**
