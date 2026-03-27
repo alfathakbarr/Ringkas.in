@@ -4,7 +4,7 @@
 
 @section('content')
     <section class="section-enter max-w-4xl mx-auto">
-        <div class="glass-card rounded-3xl border border-white/70 shadow-soft p-5 sm:p-8">
+        <div class="glass-card rounded-3xl border border-white/70 shadow-soft p-5 sm:p-8 surface-hover">
             <div class="mb-6">
                 <p class="text-xs sm:text-sm font-semibold uppercase tracking-widest text-indigo-600">QR Code Page</p>
                 <h2 class="mt-2 text-3xl sm:text-4xl font-bold tracking-snugger text-slate-900">Generate QR Code</h2>
@@ -12,8 +12,8 @@
             </div>
 
             <div class="grid grid-cols-2 gap-3 mb-5">
-                <button type="button" id="qr-type-url" class="qr-type-btn rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2.5 text-sm font-semibold text-indigo-700" data-type="url">URL</button>
-                <button type="button" id="qr-type-text" class="qr-type-btn rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700" data-type="text">Text</button>
+                <button type="button" id="qr-type-url" class="qr-type-btn focus-ring interactive-press rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2.5 text-sm font-semibold text-indigo-700" data-type="url">URL</button>
+                <button type="button" id="qr-type-text" class="qr-type-btn focus-ring interactive-press rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700" data-type="text">Text</button>
             </div>
 
             <form id="qr-generator-form" class="space-y-4">
@@ -22,7 +22,7 @@
                     <input
                         type="url"
                         id="qr_url"
-                        class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-400"
+                        class="focus-ring w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-400"
                         placeholder="https://destination.com"
                     >
                 </div>
@@ -32,7 +32,7 @@
                     <textarea
                         id="qr_text"
                         rows="4"
-                        class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-400"
+                        class="focus-ring w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-400"
                         placeholder="Masukkan teks yang ingin di-scan"
                     ></textarea>
                 </div>
@@ -42,15 +42,17 @@
                     <input
                         type="text"
                         id="qr_title"
-                        class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-400"
+                        class="focus-ring w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-400"
                         placeholder="Label QR (opsional)"
                     >
                 </div>
 
-                <button type="submit" class="w-full rounded-xl bg-linear-to-r from-blue-600 to-violet-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-300/40 hover:brightness-110 transition">Generate QR Code</button>
+                <p id="qr-helper" class="text-xs text-slate-500">Masukkan URL atau teks, lalu klik Generate.</p>
+
+                <button type="submit" class="focus-ring interactive-press w-full rounded-xl bg-linear-to-r from-blue-600 to-violet-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-300/40 hover:brightness-110 transition">Generate QR Code</button>
             </form>
 
-            <div id="qr-result" class="mt-5 hidden rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+            <div id="qr-result" class="mt-5 hidden rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 section-enter">
                 <p class="text-sm font-semibold text-slate-900">QR Code Anda sudah siap.</p>
                 <div class="mt-3 grid sm:grid-cols-[auto,1fr] gap-4 items-start">
                     <img id="qr-result-image" src="" alt="Generated QR" class="h-44 w-44 rounded-xl border border-slate-200 p-2">
@@ -58,7 +60,7 @@
                         <p id="qr-result-title">Judul: -</p>
                         <p id="qr-result-type">Tipe: -</p>
                         <p id="qr-result-content" class="break-all">Konten: -</p>
-                        <a id="qr-result-download" href="#" download="ringkasin-qr.png" class="inline-flex rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700 transition">Download QR Code</a>
+                        <a id="qr-result-download" href="#" download="ringkasin-qr.png" class="focus-ring interactive-press inline-flex rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700 transition">Download QR Code</a>
                     </div>
                 </div>
             </div>
@@ -82,6 +84,7 @@
             const qrResultType = document.getElementById('qr-result-type');
             const qrResultContent = document.getElementById('qr-result-content');
             const qrResultDownload = document.getElementById('qr-result-download');
+            const qrHelper = document.getElementById('qr-helper');
 
             let qrMode = 'url';
 
@@ -103,6 +106,12 @@
 
             const generateQr = (content) => `https://api.qrserver.com/v1/create-qr-code/?size=420x420&ecc=H&data=${encodeURIComponent(content)}`;
 
+            const setHelper = (text, isError = false) => {
+                if (!qrHelper) return;
+                qrHelper.textContent = text;
+                qrHelper.className = isError ? 'text-xs text-rose-600' : 'text-xs text-slate-500';
+            };
+
             qrTypeButtons.forEach((button) => {
                 button.addEventListener('click', () => {
                     setQrMode(button.dataset.type || 'url');
@@ -118,6 +127,7 @@
                         : (qrTextInput?.value || '').trim();
 
                     if (!content) {
+                        setHelper(qrMode === 'url' ? 'URL belum diisi.' : 'Teks belum diisi.', true);
                         return;
                     }
 
@@ -128,6 +138,7 @@
                     if (qrResultType) qrResultType.textContent = `Tipe: ${qrMode.toUpperCase()}`;
                     if (qrResultContent) qrResultContent.textContent = `Konten: ${content}`;
                     if (qrResult) qrResult.classList.remove('hidden');
+                    setHelper('QR berhasil dibuat. Kamu bisa langsung download.', false);
                 });
             }
 

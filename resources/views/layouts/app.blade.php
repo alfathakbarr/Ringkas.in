@@ -43,6 +43,29 @@
             animation: ringkasFade 0.5s ease-out;
         }
 
+        .surface-hover {
+            transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+        }
+
+        .surface-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 14px 28px rgba(15, 23, 42, 0.1);
+            border-color: rgba(99, 102, 241, 0.28);
+        }
+
+        .interactive-press {
+            transition: transform 0.2s ease, filter 0.2s ease;
+        }
+
+        .interactive-press:active {
+            transform: translateY(1px) scale(0.99);
+        }
+
+        .focus-ring:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+
         .section-enter {
             opacity: 0;
             transform: translateY(10px);
@@ -86,6 +109,20 @@
                 display: none;
             }
         }
+
+        @media (prefers-reduced-motion: reduce) {
+            .page-enter,
+            .section-enter {
+                animation: none;
+                opacity: 1;
+                transform: none;
+            }
+
+            .surface-hover,
+            .interactive-press {
+                transition: none;
+            }
+        }
     </style>
     @stack('head')
 </head>
@@ -106,10 +143,10 @@
                 </div>
 
                 <div class="mobile-snap-nav flex items-center gap-2 rounded-2xl border border-slate-200 bg-white p-1 shadow-sm" id="main-nav-tabs">
-                    <a href="{{ route('urls.home') }}" class="px-3 py-1.5 text-sm font-semibold rounded-xl whitespace-nowrap transition {{ request()->routeIs('urls.home') ? 'bg-linear-to-r from-blue-500 to-violet-500 text-white shadow-glow' : 'text-slate-600 hover:text-slate-900' }}">Home</a>
-                    <a href="{{ route('urls.create') }}" class="px-3 py-1.5 text-sm font-semibold rounded-xl whitespace-nowrap transition {{ request()->routeIs('urls.create') ? 'bg-linear-to-r from-blue-500 to-violet-500 text-white shadow-glow' : 'text-slate-600 hover:text-slate-900' }}">Short URL</a>
-                    <a href="{{ route('urls.qr') }}" class="px-3 py-1.5 text-sm font-semibold rounded-xl whitespace-nowrap transition {{ request()->routeIs('urls.qr') ? 'bg-linear-to-r from-blue-500 to-violet-500 text-white shadow-glow' : 'text-slate-600 hover:text-slate-900' }}">Generate QR</a>
-                    <a href="{{ route('urls.index') }}" class="px-3 py-1.5 text-sm font-semibold rounded-xl whitespace-nowrap transition {{ request()->routeIs('urls.index') ? 'bg-linear-to-r from-blue-500 to-violet-500 text-white shadow-glow' : 'text-slate-600 hover:text-slate-900' }}">Kelola Link</a>
+                    <a href="{{ route('urls.home') }}" class="focus-ring interactive-press px-3 py-1.5 text-sm font-semibold rounded-xl whitespace-nowrap transition {{ request()->routeIs('urls.home') ? 'bg-linear-to-r from-blue-500 to-violet-500 text-white shadow-glow' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900' }}">Home</a>
+                    <a href="{{ route('urls.create') }}" class="focus-ring interactive-press px-3 py-1.5 text-sm font-semibold rounded-xl whitespace-nowrap transition {{ request()->routeIs('urls.create') ? 'bg-linear-to-r from-blue-500 to-violet-500 text-white shadow-glow' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900' }}">Short URL</a>
+                    <a href="{{ route('urls.qr') }}" class="focus-ring interactive-press px-3 py-1.5 text-sm font-semibold rounded-xl whitespace-nowrap transition {{ request()->routeIs('urls.qr') ? 'bg-linear-to-r from-blue-500 to-violet-500 text-white shadow-glow' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900' }}">Generate QR</a>
+                    <a href="{{ route('urls.index') }}" class="focus-ring interactive-press px-3 py-1.5 text-sm font-semibold rounded-xl whitespace-nowrap transition {{ request()->routeIs('urls.index') ? 'bg-linear-to-r from-blue-500 to-violet-500 text-white shadow-glow' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900' }}">Kelola Link</a>
                 </div>
             </div>
         </div>

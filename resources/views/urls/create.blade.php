@@ -13,7 +13,7 @@
     @endphp
 
     <section class="section-enter max-w-4xl mx-auto">
-        <div class="glass-card rounded-3xl border border-white/70 shadow-soft p-5 sm:p-8">
+        <div class="glass-card rounded-3xl border border-white/70 shadow-soft p-5 sm:p-8 surface-hover">
             <div class="mb-6">
                 <p class="text-xs sm:text-sm font-semibold uppercase tracking-widest text-indigo-600">Short URL Page</p>
                 <h2 class="mt-2 text-3xl sm:text-4xl font-bold tracking-snugger text-slate-900">Buat URL Pendek</h2>
@@ -30,7 +30,7 @@
                             type="url"
                             name="original_url"
                             id="original_url"
-                            class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-400"
+                            class="focus-ring w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-400"
                             placeholder="https://example.com/very/long/path"
                             value="{{ old('original_url') }}"
                             required
@@ -43,7 +43,7 @@
                             type="text"
                             name="title"
                             id="title"
-                            class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-400"
+                            class="focus-ring w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-400"
                             placeholder="Judul link kamu"
                             value="{{ old('title') }}"
                         >
@@ -56,7 +56,7 @@
                                 type="text"
                                 name="custom_alias"
                                 id="custom_alias"
-                                class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 pr-24 text-sm outline-none focus:ring-2 focus:ring-indigo-400"
+                                class="focus-ring w-full rounded-xl border border-slate-300 bg-white px-4 py-3 pr-24 text-sm outline-none focus:ring-2 focus:ring-indigo-400"
                                 placeholder="misal: promo-ramadan"
                                 value="{{ old('custom_alias') }}"
                             >
@@ -75,18 +75,31 @@
                             class="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700"
                             readonly
                         >
-                        <button type="button" id="regen-code" class="mt-2 text-xs font-semibold text-indigo-700 hover:text-indigo-900">Generate Ulang</button>
+                        <button type="button" id="regen-code" class="focus-ring interactive-press mt-2 text-xs font-semibold text-indigo-700 hover:text-indigo-900">Generate Ulang</button>
                     </div>
 
                     <div>
-                        <label for="deletion_key_preview" class="block mb-1.5 text-sm font-semibold text-slate-700">Delete Key (Preview)</label>
+                        <label for="deletion_key" class="block mb-1.5 text-sm font-semibold text-slate-700">Delete Key <span class="text-rose-500">*</span></label>
                         <input
                             type="text"
-                            id="deletion_key_preview"
-                            class="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700"
-                            readonly
+                            id="deletion_key"
+                            name="deletion_key"
+                            value="{{ old('deletion_key') }}"
+                            class="focus-ring w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-400"
+                            placeholder="Contoh: Ringkas!2026"
+                            required
+                            minlength="8"
+                            maxlength="64"
+                            pattern="(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).+"
+                            title="Minimal 1 huruf kapital, 1 angka, dan 1 karakter khusus"
                         >
-                        <p class="mt-2 text-xs text-slate-500">Simpan key ini agar mudah memfilter di Kelola Link.</p>
+                        <div class="mt-2">
+                            <div class="h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
+                                <div id="key-strength-bar" class="h-full w-0 rounded-full bg-rose-400 transition-all duration-300"></div>
+                            </div>
+                            <p id="key-strength-text" class="mt-1 text-xs text-slate-500">Kekuatan key: belum diisi</p>
+                        </div>
+                        <button type="button" id="regen-key" class="focus-ring interactive-press mt-1.5 text-xs font-semibold text-indigo-700 hover:text-indigo-900">Generate Key Aman</button>
                     </div>
                 </div>
 
@@ -108,18 +121,31 @@
                 <div class="flex flex-col sm:flex-row gap-3 pt-1">
                     <button
                         type="submit"
-                        class="flex-1 rounded-xl bg-linear-to-r from-blue-600 to-violet-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-300/40 hover:brightness-110 transition"
+                            class="focus-ring interactive-press flex-1 rounded-xl bg-linear-to-r from-blue-600 to-violet-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-300/40 hover:brightness-110 transition"
                     >
                         Short Link
                     </button>
                     <a
                         href="{{ route('urls.home') }}"
-                        class="flex-1 rounded-xl border border-slate-300 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
+                            class="focus-ring interactive-press flex-1 rounded-xl border border-slate-300 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
                     >
                         Kembali
                     </a>
                 </div>
             </form>
+
+            @if(session('short_url'))
+                <div class="mt-6 rounded-2xl border border-indigo-200 bg-indigo-50/60 p-4 sm:p-5 section-enter">
+                    <p class="text-sm font-semibold text-indigo-900">URL Pendek Anda sudah siap.</p>
+                    <p class="mt-2 text-sm break-all text-slate-800">{{ session('short_url') }}</p>
+                    @if(session('deletion_key'))
+                        <p class="mt-2 text-xs text-slate-600">Delete Key Anda: <span class="font-semibold text-slate-800">{{ session('deletion_key') }}</span></p>
+                    @endif
+                    @if(session('qr_url'))
+                        <a href="{{ session('qr_url') }}" target="_blank" class="focus-ring interactive-press mt-3 inline-flex rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700 transition">Lihat QR Hasil</a>
+                    @endif
+                </div>
+            @endif
         </div>
     </section>
 @endsection
@@ -133,8 +159,9 @@
             const aliasIndicator = document.getElementById('alias-indicator');
             const aliasMessage = document.getElementById('alias-message');
             const generatedCodeInput = document.getElementById('generated_code');
-            const deletionKeyPreview = document.getElementById('deletion_key_preview');
+            const deletionKeyInput = document.getElementById('deletion_key');
             const regenCodeBtn = document.getElementById('regen-code');
+            const regenKeyBtn = document.getElementById('regen-key');
             const shortUrlForm = document.getElementById('short-url-form');
             const originalUrlInput = document.getElementById('original_url');
 
@@ -142,6 +169,8 @@
             const shortQrWrap = document.getElementById('short-qr-preview-wrap');
             const shortQrImage = document.getElementById('short-qr-preview-image');
             const shortQrDownload = document.getElementById('short-qr-download');
+            const keyStrengthBar = document.getElementById('key-strength-bar');
+            const keyStrengthText = document.getElementById('key-strength-text');
 
             const randomString = (length) => {
                 const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -186,15 +215,15 @@
                     return { valid: true, value: '' };
                 }
 
-                const alias = raw.toLowerCase();
-                const aliasRegex = /^[a-z0-9-]{3,50}$/;
+                const alias = raw;
+                const aliasRegex = /^[A-Za-z0-9_-]{3,10}$/;
 
                 if (!aliasRegex.test(alias)) {
-                    setAliasStatus('bad', 'Alias harus 3-50 karakter, hanya huruf kecil, angka, dan tanda minus.');
+                    setAliasStatus('bad', 'Alias harus 3-10 karakter dan hanya huruf, angka, underscore, atau tanda minus.');
                     return { valid: false, value: alias };
                 }
 
-                if (existingAliases.includes(alias)) {
+                if (existingAliases.includes(alias.toLowerCase())) {
                     setAliasStatus('bad', 'Alias ini sudah dipakai.');
                     return { valid: false, value: alias };
                 }
@@ -207,9 +236,31 @@
                 if (generatedCodeInput) {
                     generatedCodeInput.value = nextUniqueCode();
                 }
-                if (deletionKeyPreview) {
-                    deletionKeyPreview.value = randomString(16);
+            };
+
+            const refreshDeletionKey = () => {
+                if (deletionKeyInput && !deletionKeyInput.value.trim()) {
+                    deletionKeyInput.value = `Rk!${Math.floor(Math.random() * 10)}${randomString(9)}`;
                 }
+            };
+
+            const refreshKeyStrength = () => {
+                if (!deletionKeyInput || !keyStrengthBar || !keyStrengthText) return;
+
+                const value = deletionKeyInput.value;
+                const hasUpper = /[A-Z]/.test(value);
+                const hasDigit = /\d/.test(value);
+                const hasSpecial = /[^A-Za-z0-9]/.test(value);
+                const hasLength = value.length >= 8;
+                const score = [hasUpper, hasDigit, hasSpecial, hasLength].filter(Boolean).length;
+
+                const widths = ['0%', '25%', '50%', '75%', '100%'];
+                const labels = ['Belum diisi', 'Lemah', 'Cukup', 'Bagus', 'Kuat'];
+                const colors = ['bg-slate-300', 'bg-rose-400', 'bg-amber-400', 'bg-sky-500', 'bg-emerald-500'];
+
+                keyStrengthBar.className = `h-full rounded-full transition-all duration-300 ${colors[score]}`;
+                keyStrengthBar.style.width = widths[score];
+                keyStrengthText.textContent = `Kekuatan key: ${labels[score]}`;
             };
 
             const refreshShortQrPreview = () => {
@@ -233,6 +284,19 @@
                 regenCodeBtn.addEventListener('click', refreshGeneratedValues);
             }
 
+            if (regenKeyBtn) {
+                regenKeyBtn.addEventListener('click', () => {
+                    if (deletionKeyInput) {
+                        deletionKeyInput.value = `Rk!${Math.floor(Math.random() * 10)}${randomString(9)}`;
+                        refreshKeyStrength();
+                    }
+                });
+            }
+
+            if (deletionKeyInput) {
+                deletionKeyInput.addEventListener('input', refreshKeyStrength);
+            }
+
             if (shortQrToggle) {
                 shortQrToggle.addEventListener('change', refreshShortQrPreview);
             }
@@ -248,14 +312,12 @@
                         event.preventDefault();
                         return;
                     }
-
-                    if (aliasInput && aliasInput.value.trim() === '' && generatedCodeInput) {
-                        aliasInput.value = generatedCodeInput.value;
-                    }
                 });
             }
 
             refreshGeneratedValues();
+            refreshDeletionKey();
+            refreshKeyStrength();
             validateAlias();
             refreshShortQrPreview();
         })();
