@@ -6,6 +6,7 @@ use App\Models\Url;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use Throwable;
 
 class UrlController extends Controller
 {
@@ -120,11 +121,18 @@ class UrlController extends Controller
 
         $shortUrl = route('urls.show', $url->custom_alias ?? $url->short_code);
         $qrPath = null;
+        $qrUrl = null;
 
         if ($generateQr) {
-            $qrBinary = QrCode::format('png')->size(300)->margin(1)->generate($shortUrl);
-            $qrPath = "qr/{$url->id}.png";
-            Storage::disk('public')->put($qrPath, $qrBinary);
+            try {
+                $qrBinary = QrCode::format('png')->size(300)->margin(1)->generate($shortUrl);
+                $qrPath = "qr/{$url->id}.png";
+                Storage::disk('public')->put($qrPath, $qrBinary);
+                $qrUrl = Storage::url($qrPath);
+            } catch (Throwable $e) {
+                report($e);
+                $qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&ecc=H&data=' . urlencode($shortUrl);
+            }
         }
 
         $url->update(['qr_path' => $qrPath]);
@@ -134,8 +142,12 @@ class UrlController extends Controller
             ->with('short_url', $shortUrl)
             ->with('deletion_key', $validated['deletion_key']);
 
-        if ($qrPath) {
-            $redirect->with('qr_url', Storage::url($qrPath));
+        if ($qrUrl) {
+            $redirect->with('qr_url', $qrUrl);
+
+            if (!$qrPath) {
+                $redirect->with('error', 'QR lokal belum tersedia di server saat ini. Menampilkan QR fallback.');
+            }
         }
 
         return $redirect;
