@@ -8,6 +8,15 @@ use Illuminate\Http\Request;
 class UrlController extends Controller
 {
     /**
+     * Display homepage preview.
+     */
+    public function home()
+    {
+        $urls = Url::all();
+        return view('urls.home', compact('urls'));
+    }
+
+    /**
      * Display a listing of the resource.
      */
     public function index()
@@ -22,6 +31,14 @@ class UrlController extends Controller
     public function create()
     {
         return view('urls.create');
+    }
+
+    /**
+     * Display QR generator page.
+     */
+    public function qr()
+    {
+        return view('urls.qr');
     }
 
     /**
