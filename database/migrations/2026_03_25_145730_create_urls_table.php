@@ -16,7 +16,7 @@ return new class extends Migration
             $table->text('original_url');
             $table->string('short_code', 10)->unique();
             $table->string('custom_alias')->nullable()->unique();
-            $table->string('deletion_key')->unique();
+            $table->string('deletion_key')->index();
             $table->integer('click_count')->default(0);
             $table->timestamps();
         });

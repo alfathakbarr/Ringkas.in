@@ -112,36 +112,51 @@
                     </button>
                 </div>
             </form>
+        </div>
 
-            @if(session('short_url'))
-                <div class="mt-6 rounded-2xl border border-indigo-200 bg-indigo-50/60 p-4 sm:p-5 section-enter">
-                    <p class="text-sm font-semibold text-indigo-900">URL Pendek Anda sudah Siap!</p>
-                    <div class="mt-3 grid gap-4 md:grid-cols-2">
-                        <div class="rounded-xl border border-slate-200 bg-white p-3">
-                            <p class="text-xs text-slate-500">URL Pendek</p>
-                            <p class="mt-1 text-sm break-all text-slate-800">{{ session('short_url') }}</p>
+        @if(session('short_url'))
+            <div class="mt-6 glass-card rounded-3xl border border-white/70 shadow-soft p-4 sm:p-6 section-enter">
+                <div class="grid gap-4 md:grid-cols-[1fr,1.1fr]">
+                    <div>
+                        <h3 class="text-2xl font-bold text-black">URL Pendek Anda sudah Siap!</h3>
 
-                            @if(session('deletion_key'))
-                                <p class="mt-3 text-xs text-slate-500">Delete Key</p>
-                                <p class="mt-1 text-sm font-semibold text-slate-800">{{ session('deletion_key') }}</p>
-                            @endif
-
-                            <p class="mt-3 text-xs text-slate-500">Dibuat pada : {{ now()->translatedFormat('d F Y') }}</p>
+                        <p class="mt-4 text-lg font-semibold text-slate-700">Judul</p>
+                        <div class="mt-2 rounded-2xl bg-slate-100 px-4 py-2 text-base text-slate-800">
+                            {{ session('title') !== '' ? session('title') : 'Judul yang Kalian isi...' }}
                         </div>
 
-                        <div class="rounded-xl border border-slate-200 bg-white p-3 text-center">
-                            <p class="text-sm font-semibold text-slate-900">QR Code</p>
-                            @if(session('qr_url'))
-                                <img src="{{ session('qr_url') }}" alt="QR Result" class="mx-auto mt-2 h-36 w-36 rounded-md border border-slate-200 p-1 bg-white">
-                                <a href="{{ session('qr_url') }}" target="_blank" class="focus-ring interactive-press mt-3 inline-flex rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700 transition">Download QR Code</a>
-                            @else
-                                <p class="mt-2 text-xs text-slate-500">QR tidak dibuat karena opsi QR dinonaktifkan.</p>
-                            @endif
+                        <p class="mt-4 text-lg font-semibold text-slate-700">URL Pendek</p>
+                        <div class="mt-2 flex items-center gap-3">
+                            <div class="flex-1 rounded-2xl border border-cyan-500 bg-cyan-100 px-4 py-3 text-base text-blue-700 break-all" id="short-url-result">{{ session('short_url') }}</div>
+                            <button type="button" id="copy-short-url" class="focus-ring inline-flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-600 text-white text-xl">⧉</button>
                         </div>
+
+                        <p class="mt-4 text-lg font-semibold text-slate-700">Original URL</p>
+                        <div class="mt-2 rounded-2xl bg-slate-100 px-4 py-3 text-base text-slate-500 break-all underline decoration-1">
+                            {{ session('original_url') }}
+                        </div>
+
+                        <p class="mt-4 text-base text-slate-600">🕒 Dibuat pada : {{ session('created_at_label') }}</p>
+                    </div>
+
+                    <div class="rounded-3xl border border-fuchsia-100 bg-blue-50 p-4 text-center">
+                        <h4 class="flex items-center gap-3 text-3xl font-bold text-black">
+                            <span class="text-3xl">▦</span>
+                            QR Code
+                        </h4>
+
+                        @php
+                            $fallbackQr = 'https://api.qrserver.com/v1/create-qr-code/?size=350x350&ecc=H&data=' . urlencode((string) session('short_url'));
+                            $qrDisplayUrl = session('qr_url') ?: $fallbackQr;
+                        @endphp
+
+                        <img src="{{ $qrDisplayUrl }}" alt="QR Result" class="mx-auto mt-4 h-56 w-56 rounded-2xl border border-slate-300 bg-white p-2">
+                        <p class="mt-3 text-xl text-slate-800">Scan untuk mengunjungi link yang diringkasin!</p>
+                        <a href="{{ $qrDisplayUrl }}" target="_blank" id="qr-download-btn" class="focus-ring interactive-press mt-3 inline-flex rounded-2xl bg-indigo-600 px-6 py-2.5 text-xl font-semibold text-white">⤓ Download QR Code</a>
                     </div>
                 </div>
-            @endif
-        </div>
+            </div>
+        @endif
     </section>
 @endsection
 
@@ -158,6 +173,8 @@
             const deletionKeyInput = document.getElementById('deletion_key');
             const shortUrlForm = document.getElementById('short-url-form');
             const generateQrCheckbox = document.getElementById('generate_qr');
+            const copyShortUrlButton = document.getElementById('copy-short-url');
+            const shortUrlResult = document.getElementById('short-url-result');
 
             const randomString = (length) => {
                 const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -264,6 +281,24 @@
 
                     if (!deletionKeyInput || !deletionKeyInput.value.trim()) {
                         event.preventDefault();
+                    }
+                });
+            }
+
+            if (copyShortUrlButton && shortUrlResult) {
+                copyShortUrlButton.addEventListener('click', async () => {
+                    const shortUrlText = shortUrlResult.textContent.trim();
+                    if (!shortUrlText) return;
+
+                    if (navigator.clipboard && window.isSecureContext) {
+                        await navigator.clipboard.writeText(shortUrlText);
+                        const previous = copyShortUrlButton.textContent;
+                        copyShortUrlButton.textContent = '✓';
+                        setTimeout(() => {
+                            copyShortUrlButton.textContent = previous;
+                        }, 1000);
+                    } else {
+                        window.prompt('Copy this URL:', shortUrlText);
                     }
                 });
             }

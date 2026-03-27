@@ -69,35 +69,35 @@
 
                 <button type="submit" class="focus-ring interactive-press w-full rounded-xl bg-blue-600 bg-linear-to-r from-blue-600 to-violet-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-300/40 hover:brightness-110 transition">Generate QR Code</button>
             </form>
+        </div>
 
-            <div id="qr-result" class="mt-6 hidden rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 section-enter">
-                <p class="text-2xl font-bold text-slate-900">QR Code Anda sudah Siap!</p>
-                <div class="mt-3 grid md:grid-cols-2 gap-4 items-start">
-                    <div class="rounded-xl border border-indigo-100 bg-blue-50 p-4 text-center">
-                        <img id="qr-result-image" src="" alt="Generated QR" class="mx-auto h-44 w-44 rounded-md border border-slate-200 bg-white p-2">
-                        <p class="mt-2 text-xs text-slate-500">Scan untuk mengunjungi URL!</p>
-                        <a id="qr-result-download" href="#" download="ringkasin-qr.png" class="focus-ring interactive-press mt-2 inline-flex rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700 transition">Download QR Code</a>
-                    </div>
+        <div id="qr-result" class="mt-6 hidden glass-card rounded-3xl border border-white/70 shadow-soft p-4 sm:p-6 section-enter">
+            <p class="text-2xl sm:text-3xl font-bold text-slate-900">QR Code Anda sudah Siap!</p>
+            <div class="mt-3 grid md:grid-cols-2 gap-4 items-start">
+                <div class="rounded-2xl border border-indigo-100 bg-blue-50 p-4 text-center">
+                    <img id="qr-result-image" src="" alt="Generated QR" class="mx-auto h-44 w-44 sm:h-56 sm:w-56 rounded-md border border-slate-200 bg-white p-2">
+                    <p class="mt-3 text-base sm:text-lg text-slate-700">Scan untuk mengunjungi Link yang diringkasin!</p>
+                    <a id="qr-result-download" href="#" download="ringkasin-qr.png" class="focus-ring interactive-press mt-3 inline-flex w-full sm:w-auto justify-center rounded-xl bg-indigo-600 px-5 py-2.5 text-base font-semibold text-white hover:bg-indigo-700 transition">Download QR Code</a>
+                </div>
 
-                    <div class="space-y-3">
-                        <div>
-                            <p class="text-xs font-semibold text-slate-500">Judul</p>
-                            <p id="qr-result-title" class="mt-1 rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-700">Judul yang Kalian isi...</p>
-                        </div>
-                        <div>
-                            <p class="text-xs font-semibold text-slate-500">Tipe QR</p>
-                            <div class="mt-1 rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-700">
-                                <span id="qr-type-url-pill" class="inline-block rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700">URL</span>
-                                <span class="mx-2 text-slate-400">atau</span>
-                                <span id="qr-type-text-pill" class="inline-block rounded-full bg-fuchsia-100 px-3 py-1 text-xs font-semibold text-fuchsia-700">Text</span>
-                            </div>
-                        </div>
-                        <div>
-                            <p class="text-xs font-semibold text-slate-500">Isi Konten</p>
-                            <p id="qr-result-content" class="mt-1 rounded-lg bg-slate-100 px-3 py-2 text-sm break-all text-slate-700">-</p>
-                        </div>
-                        <p class="text-sm text-slate-600">🕒 Dibuat pada : {{ now()->translatedFormat('d F Y') }}</p>
+                <div class="space-y-3">
+                    <div>
+                        <p class="text-sm font-semibold text-slate-600">Judul</p>
+                        <p id="qr-result-title" class="mt-1 rounded-lg bg-slate-100 px-3 py-2 text-base text-slate-700">Judul yang Kalian isi...</p>
                     </div>
+                    <div>
+                        <p class="text-sm font-semibold text-slate-600">Tipe QR</p>
+                        <div class="mt-1 rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-700">
+                            <span id="qr-type-url-pill" class="inline-block rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700">URL</span>
+                            <span class="mx-2 text-slate-400">atau</span>
+                            <span id="qr-type-text-pill" class="inline-block rounded-full bg-fuchsia-100 px-3 py-1 text-xs font-semibold text-fuchsia-700">Text</span>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="text-sm font-semibold text-slate-600">Isi Konten</p>
+                        <p id="qr-result-content" class="mt-1 rounded-lg bg-slate-100 px-3 py-2 text-sm break-all text-slate-700">-</p>
+                    </div>
+                    <p class="text-base text-slate-600">🕒 Dibuat pada : {{ now()->translatedFormat('d F Y') }}</p>
                 </div>
             </div>
         </div>
@@ -117,7 +117,6 @@
             const qrResult = document.getElementById('qr-result');
             const qrResultImage = document.getElementById('qr-result-image');
             const qrResultTitle = document.getElementById('qr-result-title');
-            const qrResultType = document.getElementById('qr-result-type');
             const qrResultContent = document.getElementById('qr-result-content');
             const qrResultDownload = document.getElementById('qr-result-download');
             const qrHelper = document.getElementById('qr-helper');
@@ -177,9 +176,8 @@
                     const qrUrl = generateQr(content);
                     if (qrResultImage) qrResultImage.src = qrUrl;
                     if (qrResultDownload) qrResultDownload.href = qrUrl;
-                    if (qrResultTitle) qrResultTitle.textContent = `Judul: ${(qrTitleInput?.value || '').trim() || '-'}`;
-                    if (qrResultType) qrResultType.textContent = `Tipe: ${qrMode.toUpperCase()}`;
-                    if (qrResultContent) qrResultContent.textContent = `Konten: ${content}`;
+                    if (qrResultTitle) qrResultTitle.textContent = (qrTitleInput?.value || '').trim() || '-';
+                    if (qrResultContent) qrResultContent.textContent = content;
                     if (qrResult) qrResult.classList.remove('hidden');
                     setHelper('QR berhasil dibuat. Kamu bisa langsung download.', false);
                 });

@@ -132,7 +132,10 @@ class UrlController extends Controller
         $redirect = back()
             ->with('success', 'URL pendek berhasil dibuat')
             ->with('short_url', $shortUrl)
-            ->with('deletion_key', $validated['deletion_key']);
+            ->with('deletion_key', $validated['deletion_key'])
+            ->with('original_url', $validated['original_url'])
+            ->with('title', trim((string) $request->input('title', '')))
+            ->with('created_at_label', optional($url->created_at)->translatedFormat('d F Y'));
 
         if ($qrPath) {
             $redirect->with('qr_url', Storage::url($qrPath));
