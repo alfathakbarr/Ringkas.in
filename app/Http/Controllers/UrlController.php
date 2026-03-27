@@ -156,12 +156,8 @@ class UrlController extends Controller
             ->orWhere('custom_alias', $code)
             ->firstOrFail();
 
-        $url->incrementClick();
-        $url->refresh();
-
         return response()->json([
             'original_url' => $url->original_url,
-            'click_count' => $url->click_count,
         ]);
     }
 
@@ -172,11 +168,11 @@ class UrlController extends Controller
     {
         $url = Url::where('short_code', $code)
             ->orWhere('custom_alias', $code)
-            ->firstOrFail();
+            ->firstOrFail(); // otomatis 404 kalau tidak ditemukan
 
-        $url->incrementClick();
+        $url->increment('click_count');
 
-        return redirect()->away($url->original_url);
+        return redirect()->to($url->original_url);
     }
 
     /**
