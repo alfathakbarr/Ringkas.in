@@ -12,6 +12,7 @@ class Url extends Model
         'custom_alias',
         'deletion_key',
         'click_count',
+        'qr_path',
     ];
 
     protected $casts = [
