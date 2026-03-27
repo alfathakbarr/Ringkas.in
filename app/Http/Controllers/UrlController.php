@@ -4,20 +4,24 @@ namespace App\Http\Controllers;
 
 use App\Models\Url;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class UrlController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Homepage.
      */
-    public function index()
+    public function home()
     {
-        $urls = Url::all();
-        return view('urls.index', compact('urls'));
+        $urls = Url::latest()->get();
+
+        return view('urls.home', compact('urls'));
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Short URL page.
      */
     public function create()
     {
@@ -25,65 +29,198 @@ class UrlController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
+     * QR generator page.
+     */
+    public function qr()
+    {
+        return view('urls.qr');
+    }
+
+    /**
+     * Manage links page.
+     */
+    public function index()
+    {
+        $urls = Url::latest()->get();
+
+        return view('urls.index', compact('urls'));
+    }
+
+    /**
+     * Store new short URL.
      */
     public function store(Request $request)
     {
-        $request->validate([
-            'original_url' => 'required|url',
-            'custom_alias' => 'nullable|string|unique:urls,custom_alias',
+        $validated = $request->validate(
+            [
+                'original_url' => ['required', 'url:http,https'],
+                'custom_alias' => ['nullable', 'alpha_dash', 'min:3', 'max:10', 'unique:urls,custom_alias'],
+                'deletion_key' => [
+                    'required',
+                    'string',
+                    'min:8',
+                    'max:64',
+                    'regex:/^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).+$/',
+                ],
+            ],
+            [
+                'original_url.required' => 'URL tujuan wajib diisi.',
+                'original_url.url' => 'URL tujuan harus valid dan menggunakan http/https.',
+
+                'custom_alias.alpha_dash' => 'Alias hanya boleh berisi huruf, angka, strip, atau underscore.',
+                'custom_alias.min' => 'Alias minimal :min karakter.',
+                'custom_alias.max' => 'Alias maksimal :max karakter.',
+                'custom_alias.unique' => 'Alias sudah digunakan, silakan pilih alias lain.',
+
+                'deletion_key.required' => 'Deletion key wajib diisi.',
+                'deletion_key.min' => 'Deletion key minimal :min karakter.',
+                'deletion_key.max' => 'Deletion key maksimal :max karakter.',
+                'deletion_key.regex' => 'Deletion key wajib memiliki minimal 1 huruf kapital, 1 angka, dan 1 karakter khusus.',
+            ],
+            [
+                'original_url' => 'URL tujuan',
+                'custom_alias' => 'alias',
+                'deletion_key' => 'deletion key',
+            ]
+        );
+
+        $shortCode = !empty($validated['custom_alias'])
+            ? strtolower($validated['custom_alias'])
+            : Url::generateShortCode();
+
+        $isCodeUsed = Url::query()
+            ->where('short_code', $shortCode)
+            ->orWhere('custom_alias', $shortCode)
+            ->exists();
+
+        if ($isCodeUsed) {
+            return back()
+                ->withErrors(['custom_alias' => 'Alias atau kode sudah digunakan.'])
+                ->withInput();
+        }
+
+        $keyHash = $this->hashDeletionKey($validated['deletion_key']);
+
+        $url = Url::create([
+            'original_url' => $validated['original_url'],
+            'custom_alias' => $validated['custom_alias'] ?? null,
+            'short_code' => $shortCode,
+            'deletion_key' => $keyHash,
+            'click_count' => 0,
         ]);
 
-        $url = new Url();
-        $url->original_url = $request->original_url;
-        $url->custom_alias = $request->custom_alias;
-        $url->short_code = $request->custom_alias ?? Url::generateShortCode();
-        $url->click_count = 0;
-        $url->save();
+        $shortUrl = route('urls.show', $url->custom_alias ?? $url->short_code);
+        $qrBinary = QrCode::format('png')->size(300)->margin(1)->generate($shortUrl);
+        $qrPath = "qr/{$url->id}.png";
+        Storage::disk('public')->put($qrPath, $qrBinary);
 
-        return redirect()->route('urls.index')
-                       ->with('success', 'URL berhasil dibuat!');
+        $url->update(['qr_path' => $qrPath]);
+
+        return back()
+            ->with('success', 'URL pendek berhasil dibuat')
+            ->with('short_url', $shortUrl)
+            ->with('deletion_key', $validated['deletion_key'])
+            ->with('qr_url', Storage::url($qrPath));
     }
 
     /**
-     * Display the specified resource and increment click count.
+     * Search links by key.
      */
-    public function show(string $id)
+    public function search(Request $request)
     {
-        $url = Url::where('short_code', $id)
-                  ->orWhere('custom_alias', $id)
-                  ->firstOrFail();
+        $validated = $request->validate(
+            [
+                'key' => ['required', 'string', 'min:8', 'max:64'],
+            ],
+            [
+                'key.required' => 'Deletion key wajib diisi.',
+                'key.string' => 'Deletion key harus berupa teks.',
+                'key.min' => 'Deletion key minimal :min karakter.',
+                'key.max' => 'Deletion key maksimal :max karakter.',
+            ],
+            [
+                'key' => 'deletion key',
+            ]
+        );
 
-        $url->incrementClick();
+        $keyHash = $this->hashDeletionKey($validated['key']);
 
-        return redirect($url->original_url);
+        $urls = Url::query()
+            ->where('deletion_key', $keyHash)
+            ->latest()
+            ->get();
+
+        return view('urls.index', [
+            'urls' => $urls,
+            'key' => $validated['key'],
+        ]);
     }
 
     /**
-     * Show the form for editing the resource.
+     * Delete link by id.
      */
-    public function edit(string $id)
+    public function destroy(Request $request, string $id)
     {
-        //
-    }
+        $validated = $request->validate(
+            [
+                'deletion_key' => ['required', 'string', 'min:8', 'max:64'],
+            ],
+            [
+                'deletion_key.required' => 'Deletion key wajib diisi untuk menghapus link.',
+                'deletion_key.string' => 'Deletion key harus berupa teks.',
+                'deletion_key.min' => 'Deletion key minimal :min karakter.',
+                'deletion_key.max' => 'Deletion key maksimal :max karakter.',
+            ],
+            [
+                'deletion_key' => 'deletion key',
+            ]
+        );
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
         $url = Url::findOrFail($id);
+        $inputHash = $this->hashDeletionKey($validated['deletion_key']);
+
+        if (!hash_equals((string) $url->deletion_key, $inputHash)) {
+            return back()->with('error', 'Data tidak valid atau tidak memiliki akses.');
+        }
+
         $url->delete();
 
-        return redirect()->route('urls.index')
-                       ->with('success', 'URL berhasil dihapus!');
+        return back()->with('success', 'Link berhasil dihapus');
+    }
+
+    /**
+     * POST access endpoint (tracking/API).
+     */
+    public function access(string $code)
+    {
+        $url = Url::where('short_code', $code)
+            ->orWhere('custom_alias', $code)
+            ->firstOrFail();
+
+        return response()->json([
+            'original_url' => $url->original_url,
+        ]);
+    }
+
+    /**
+     * Public redirect endpoint.
+     */
+    public function show(string $code)
+    {
+        $url = Url::where('short_code', $code)
+            ->orWhere('custom_alias', $code)
+            ->firstOrFail(); // otomatis 404 kalau tidak ditemukan
+
+        $url->increment('click_count');
+
+        return redirect()->to($url->original_url);
+    }
+
+    /**
+     * Hash the deletion key.
+     */
+    private function hashDeletionKey(string $plainKey): string
+    {
+        return hash_hmac('sha256', trim($plainKey), (string) config('app.key'));
     }
 }

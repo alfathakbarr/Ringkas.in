@@ -10,35 +10,33 @@ class Url extends Model
         'original_url',
         'short_code',
         'custom_alias',
+        'deletion_key',
         'click_count',
+        'qr_path',
     ];
 
-    public $timestamps = false;
+    protected $casts = [
+        'click_count' => 'integer',
+    ];
 
-    /**
-     * Generate random short code
-     */
     public static function generateShortCode(): string
     {
         $chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        $code = '';
-        $length = random_int(8, 10);
-        
-        for ($i = 0; $i < $length; $i++) {
-            $code .= $chars[random_int(0, strlen($chars) - 1)];
-        }
+        $maxLength = 10;
+        $minLength = 8;
 
-        // Ensure uniqueness
-        while (self::where('short_code', $code)->exists()) {
-            $code = self::generateShortCode();
-        }
+        do {
+            $length = random_int($minLength, $maxLength);
+            $code = '';
+
+            for ($i = 0; $i < $length; $i++) {
+                $code .= $chars[random_int(0, strlen($chars) - 1)];
+            }
+        } while (self::where('short_code', $code)->exists());
 
         return $code;
     }
 
-    /**
-     * Increment click count
-     */
     public function incrementClick(): void
     {
         $this->increment('click_count');
